@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paris Crack Growth</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- KaTeX CDN for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+        .mono { font-family: 'Roboto Mono', monospace; }
+        input[type=range] { accent-color: #0284c7; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- STUDENT & APPLICATION HEADER -->
+    <header class="bg-slate-900 text-white border-b-4 border-sky-600 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
+                        <i class="fa-solid fa-atom text-sky-400"></i> Paris Crack Growth
+                    </h1>
+                    <p class="text-xs text-sky-300 font-medium mt-0.5">Aircraft Structural Integrity & Fatigue Crack Propagation Analysis Tool</p>
+                </div>
+                
+                <!-- Student Metadata Header Box -->
+                <div class="bg-slate-800/90 border border-slate-700 rounded-lg p-3 text-xs space-y-1 min-w-[260px]">
+                    <div class="flex justify-between"><span class="text-slate-400">Student Name:</span> <span class="font-bold text-sky-200">Mouza Al Mansoori</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Student ID:</span> <span class="mono text-white font-semibold">202101951</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Title:</span> <span class="text-slate-200">Paris Crack Growth</span></div>
+                    <div class="flex justify-between border-t border-slate-700 pt-1 mt-1"><span class="text-slate-400">Submission Date:</span> <span class="text-slate-300 mono">10/26/26</span></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN INTERACTIVE TOOL CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT CONTROL PANEL (4 COLS) -->
+            <div class="lg:col-span-4 space-y-5">
+
+                <!-- Material Presets -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                        <span><i class="fa-solid fa-layer-group text-sky-600 mr-1.5"></i>Material Preset</span>
+                        <span class="text-[11px] text-slate-400 font-normal">Aerospace Data</span>
+                    </label>
+                    <select id="select-material" onchange="loadMaterialPreset()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                        <option value="al2024">Aluminum 2024-T3 (Aircraft Fuselage Skin)</option>
+                        <option value="al7075">Aluminum 7075-T6 (Wing Upper Spar Caps)</option>
+                        <option value="ti6al4v">Titanium Ti-6Al-4V (Bulkheads / Fittings)</option>
+                        <option value="steel4340">High-Strength Steel 4340 (Landing Gear)</option>
+                        <option value="custom">Custom Parameters</option>
+                    </select>
+                </div>
+
+                <!-- Geometry & Stress Inputs -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-4">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-ruler text-sky-600"></i> Geometry & Load Inputs
+                    </h3>
+
+                    <!-- Geometry Selection -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Crack Specimen Geometry</label>
+                        <select id="input-geom" onchange="calculate()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:ring-2 focus:ring-sky-500">
+                            <option value="center">Center Cracked Tension Plate (CCT)</option>
+                            <option value="single_edge">Single Edge Notch Tension (SENT)</option>
+                            <option value="double_edge">Double Edge Notch Tension (DENT)</option>
+                        </select>
+                    </div>
+
+                    <!-- Plate Width W -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600">Plate Width ($W$)</span>
+                            <span class="mono font-semibold text-sky-700" id="disp-w">100.0 mm</span>
+                        </div>
+                        <input type="range" id="input-w" min="20" max="400" step="1" value="100" class="w-full" oninput="calculate()">
+                    </div>
+
+                    <!-- Initial Crack Length a0 -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600">Initial Crack Length ($a_0$)</span>
+                            <span class="mono font-semibold text-sky-700" id="disp-a0">2.0 mm</span>
+                        </div>
+                        <input type="range" id="input-a0" min="0.5" max="20" step="0.1" value="2.0" class="w-full" oninput="calculate()">
+                    </div>
+
+                    <!-- Target Crack Length af -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600">Target Crack Length ($a_f$)</span>
+                            <span class="mono font-semibold text-sky-700" id="disp-af">15.0 mm</span>
+                        </div>
+                        <input type="range" id="input-af" min="3" max="50" step="0.5" value="15.0" class="w-full" oninput="calculate()">
+                    </div>
+
+                    <!-- Stress Parameters -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Stress Range ($\Delta\sigma$)</label>
+                            <div class="flex items-center">
+                                <input type="number" id="input-dsig" value="135" step="5" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs text-slate-800" onchange="calculate()">
+                                <span class="text-[11px] text-slate-500 ml-1">MPa</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Stress Ratio ($R$)</label>
+                            <input type="number" id="input-r" value="0.1" step="0.05" min="0" max="0.8" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs text-slate-800" onchange="calculate()">
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs flex justify-between">
+                        <span class="text-slate-600">Peak Stress ($\sigma_{max}$):</span>
+                        <span class="mono font-bold text-slate-800" id="disp-sigmax">150.00 MPa</span>
+                    </div>
+                </div>
+
+                <!-- Fracture Properties & Constants -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-4">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-calculator text-sky-600"></i> Material & Fracture Constants
+                    </h3>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Paris Exponent ($m$)</label>
+                            <input type="number" id="input-m" value="3.2" step="0.05" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs text-slate-800" onchange="calculate()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Paris Constant ($C$)</label>
+                            <input type="text" id="input-c" value="1.5e-11" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs text-slate-800 mono" onchange="calculate()">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Toughness ($K_{IC}$)</label>
+                            <div class="flex items-center">
+                                <input type="number" id="input-kic" value="34.0" step="0.5" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs text-slate-800" onchange="calculate()">
+                                <span class="text-[10px] text-slate-500 ml-1 shrink-0">MPa√m</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1">Threshold ($\Delta K_{th}$)</label>
+                            <div class="flex items-center">
+                                <input type="number" id="input-dkth" value="3.0" step="0.1" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs text-slate-800" onchange="calculate()">
+                                <span class="text-[10px] text-slate-500 ml-1 shrink-0">MPa√m</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-600 mb-1">Yield Strength ($\sigma_y$)</label>
+                        <div class="flex items-center">
+                            <input type="number" id="input-sy" value="345" step="5" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs text-slate-800" onchange="calculate()">
+                            <span class="text-[10px] text-slate-500 ml-1 shrink-0">MPa</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT OUTPUT DASHBOARD & VISUALIZATIONS (8 COLS) -->
+            <div class="lg:col-span-8 space-y-6">
+
+                <!-- SUMMARY RESULT CARDS -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-emerald-600">
+                        <span class="text-[11px] text-slate-500 uppercase font-semibold block">Fatigue Life ($N_f$)</span>
+                        <div class="mt-1 flex items-baseline gap-1">
+                            <span id="out-nf" class="text-xl font-bold text-emerald-600 mono">142,850</span>
+                            <span class="text-xs text-slate-500">cycles</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-amber-500">
+                        <span class="text-[11px] text-slate-500 uppercase font-semibold block">Critical Crack ($a_c$)</span>
+                        <div class="mt-1 flex items-baseline gap-1">
+                            <span id="out-ac" class="text-xl font-bold text-amber-600 mono">16.24</span>
+                            <span class="text-xs text-slate-500">mm</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-indigo-600">
+                        <span class="text-[11px] text-slate-500 uppercase font-semibold block">Peak Intensity ($K_{max,0}$)</span>
+                        <div class="mt-1 flex items-baseline gap-1">
+                            <span id="out-kmax" class="text-xl font-bold text-indigo-600 mono">9.48</span>
+                            <span class="text-xs text-slate-500">MPa√m</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-sky-600">
+                        <span class="text-[11px] text-slate-500 uppercase font-semibold block">Final Growth Rate</span>
+                        <div class="mt-1 flex items-baseline gap-1">
+                            <span id="out-dadn" class="text-lg font-bold text-sky-700 mono">1.2e-7</span>
+                            <span class="text-[10px] text-slate-500">m/cyc</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CANVAS SPECIMEN SCHEMATIC & CHART 1 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <!-- Canvas Specimen Schematic -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-eye text-sky-600"></i> Specimen & Crack Tip Schematic
+                            </h3>
+                            <span id="canvas-geom-tag" class="text-[10px] bg-sky-50 text-sky-700 px-2 py-0.5 rounded border border-sky-200 font-medium">CCT Plate</span>
+                        </div>
+                        <div class="relative w-full h-[220px] bg-slate-900 rounded-lg border border-slate-800 flex items-center justify-center p-2 overflow-hidden">
+                            <canvas id="canvas-specimen" class="w-full h-full object-contain"></canvas>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-slate-500 mt-2 px-1">
+                            <span>Stress load $\Delta\sigma$ applied perpendicular</span>
+                            <span>$r_p \approx \frac{1}{2\pi}\left(\frac{K_{max}}{\sigma_y}\right)^2$: <strong id="disp-rp" class="mono text-slate-700">0.09 mm</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Chart 1: Crack Propagation Curve -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <i class="fa-solid fa-chart-line text-sky-600"></i> Crack Propagation Curve ($a$ vs $N$)
+                        </h3>
+                        <div class="relative w-full h-[230px]">
+                            <canvas id="chart-a-vs-n"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- CHART 2: Log-Log Paris Growth Regime Plot -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrow-trend-up text-sky-600"></i> Paris Growth Regime Plot ($\log \frac{da}{dN}$ vs $\log \Delta K$)
+                        </h3>
+                        <span class="text-[11px] text-slate-500">Paris Slope $m = <span id="disp-m-slope" class="mono font-bold text-slate-700">3.20</span>$</span>
+                    </div>
+                    <div class="relative w-full h-[240px]">
+                        <canvas id="chart-dadn-vs-dk"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-4 border-t border-slate-800 mt-8">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-1">
+            <p>Paris Crack Growth Analysis Tool | Mouza Al Mansoori (ID: 202101951)</p>
+            <p class="text-slate-500">Linear Elastic Fracture Mechanics (LEFM) & ASTM E647 Guidelines</p>
+        </div>
+    </footer>
+
+    <!-- CALCULATIONS & CHARTS JS ENGINE -->
+    <script>
+        // GLOBAL CHARTS
+        let chartAvsN = null;
+        let chartDadnVsDk = null;
+
+        // MATERIAL PRESETS DATA
+        const MATERIALS = {
+            al2024: { name: "Aluminum 2024-T3", C: 1.5e-11, m: 3.2, kic: 34.0, dkth: 3.0, sy: 345 },
+            al7075: { name: "Aluminum 7075-T6", C: 3.8e-11, m: 3.5, kic: 27.0, dkth: 2.5, sy: 505 },
+            ti6al4v: { name: "Titanium Ti-6Al-4V", C: 1.2e-11, m: 3.3, kic: 55.0, dkth: 4.5, sy: 880 },
+            steel4340: { name: "High-Strength Steel 4340", C: 2.5e-12, m: 2.9, kic: 65.0, dkth: 5.0, sy: 860 }
+        };
+
+        window.onload = function() {
+            // Render Math equations via KaTeX
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ]
+            });
+
+            initCharts();
+            loadMaterialPreset();
+            calculate();
+            window.addEventListener('resize', drawSpecimen);
+        };
+
+        // LOAD PRESET
+        function loadMaterialPreset() {
+            const key = document.getElementById('select-material').value;
+            if (key === 'custom') return;
+
+            const mat = MATERIALS[key];
+            document.getElementById('input-m').value = mat.m;
+            document.getElementById('input-c').value = mat.C.toExponential(2);
+            document.getElementById('input-kic').value = mat.kic;
+            document.getElementById('input-dkth').value = mat.dkth;
+            document.getElementById('input-sy').value = mat.sy;
+            calculate();
+        }
+
+        // BOUNDARY GEOMETRY FACTOR Y(a/W)
+        function getYFactor(a_mm, W_mm, type) {
+            const alpha = a_mm / W_mm;
+            if (type === 'center') {
+                // Center Cracked Tension (CCT)
+                return Math.sqrt(1.0 / Math.cos((Math.PI * alpha) / 2.0));
+            } else if (type === 'single_edge') {
+                // Single Edge Notch Tension (SENT)
+                return 1.12 - 0.231 * alpha + 10.55 * Math.pow(alpha, 2) - 21.72 * Math.pow(alpha, 3) + 30.39 * Math.pow(alpha, 4);
+            } else if (type === 'double_edge') {
+                // Double Edge Notch Tension (DENT)
+                return (1.12 + 0.2 * alpha - 1.2 * Math.pow(alpha, 2) + 1.93 * Math.pow(alpha, 3)) / Math.sqrt(1 - alpha);
+            }
+            return 1.12;
+        }
+
+        // MAIN CALCULATION ENGINE
+        function calculate() {
+            const geomType = document.getElementById('input-geom').value;
+            const W = parseFloat(document.getElementById('input-w').value); // mm
+            const a0 = parseFloat(document.getElementById('input-a0').value); // mm
+            const af = parseFloat(document.getElementById('input-af').value); // mm
+            const dSig = parseFloat(document.getElementById('input-dsig').value); // MPa
+            const R = parseFloat(document.getElementById('input-r').value);
+            const m = parseFloat(document.getElementById('input-m').value);
+            const C = parseFloat(document.getElementById('input-c').value);
+            const K_IC = parseFloat(document.getElementById('input-kic').value);
+            const dK_th = parseFloat(document.getElementById('input-dkth').value);
+            const sy = parseFloat(document.getElementById('input-sy').value);
+
+            const sigMax = dSig / (1 - R);
+
+            document.getElementById('disp-w').innerText = W.toFixed(1) + " mm";
+            document.getElementById('disp-a0').innerText = a0.toFixed(1) + " mm";
+            document.getElementById('disp-af').innerText = af.toFixed(1) + " mm";
+            document.getElementById('disp-sigmax').innerText = sigMax.toFixed(2) + " MPa";
+            document.getElementById('disp-m-slope').innerText = m.toFixed(2);
+
+            // Initial Stress Intensity Range
+            const a0_m = a0 / 1000.0;
+            const Y0 = getYFactor(a0, W, geomType);
+            const dK0 = Y0 * dSig * Math.sqrt(Math.PI * a0_m);
+            const Kmax0 = dK0 / (1 - R);
+
+            // Plastic zone radius estimate at crack tip rp = (1 / 2pi) * (Kmax / sy)^2 in mm
+            const rp_mm = (1.0 / (2.0 * Math.PI)) * Math.pow((Kmax0 / sy), 2) * 1000.0;
+            document.getElementById('disp-rp').innerText = rp_mm.toFixed(2) + " mm";
+
+            // Critical Crack Size ac where Kmax = K_IC
+            let ac_m = a0_m;
+            for (let a_check = a0_m; a_check < (W / 1000.0) * 0.9; a_check += 0.0001) {
+                const Y_c = getYFactor(a_check * 1000, W, geomType);
+                const Kmax_c = Y_c * sigMax * Math.sqrt(Math.PI * a_check);
+                if (Kmax_c >= K_IC) {
+                    ac_m = a_check;
+                    break;
+                }
+            }
+            const ac_mm = ac_m * 1000.0;
+
+            document.getElementById('out-ac').innerText = ac_mm.toFixed(2);
+            document.getElementById('out-kmax').innerText = Kmax0.toFixed(2);
+
+            const target_a_mm = Math.min(af, ac_mm);
+
+            // RK4 Numerical Integration
+            const numSteps = 120;
+            const da_m = (target_a_mm - a0) / (numSteps * 1000.0);
+            let current_a_m = a0_m;
+            let current_N = 0;
+
+            const a_hist = [a0];
+            const n_hist = [0];
+            const dk_hist = [dK0];
+            const dadn_hist = [C * Math.pow(dK0, m)];
+
+            for (let i = 0; i < numSteps; i++) {
+                const a_mm_curr = current_a_m * 1000.0;
+                const Y_curr = getYFactor(a_mm_curr, W, geomType);
+                const dK_curr = Y_curr * dSig * Math.sqrt(Math.PI * current_a_m);
+                
+                const k1_rate = C * Math.pow(dK_curr, m);
+
+                // Runge-Kutta 4th Order Step
+                const a_mid_m = current_a_m + da_m / 2.0;
+                const Y_mid = getYFactor(a_mid_m * 1000.0, W, geomType);
+                const dK_mid = Y_mid * dSig * Math.sqrt(Math.PI * a_mid_m);
+                const k2_rate = C * Math.pow(dK_mid, m);
+                const avg_rate = (k1_rate + 2 * k2_rate) / 3.0;
+                const dN_step = da_m / avg_rate;
+
+                current_N += dN_step;
+                current_a_m += da_m;
+
+                a_hist.push(current_a_m * 1000.0);
+                n_hist.push(current_N);
+                dk_hist.push(dK_curr);
+                dadn_hist.push(k1_rate);
+            }
+
+            document.getElementById('out-nf').innerText = Math.round(current_N).toLocaleString();
+            const final_dadn = dadn_hist[dadn_hist.length - 1];
+            document.getElementById('out-dadn').innerText = final_dadn.toExponential(2);
+
+            // Update Charts and Canvas
+            updateCharts(a_hist, n_hist, dk_hist, dadn_hist, ac_mm);
+            drawSpecimen();
+        }
+
+        // DRAW HTML5 CANVAS SPECIMEN SCHEMATIC
+        function drawSpecimen() {
+            const canvas = document.getElementById('canvas-specimen');
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const geomType = document.getElementById('input-geom').value;
+            const a0 = parseFloat(document.getElementById('input-a0').value);
+            const W = parseFloat(document.getElementById('input-w').value);
+
+            const plateW = w * 0.48;
+            const plateH = h * 0.72;
+            const x0 = (w - plateW) / 2;
+            const y0 = (h - plateH) / 2;
+
+            // Plate Body
+            ctx.fillStyle = '#1e293b';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1.5;
+            ctx.fillRect(x0, y0, plateW, plateH);
+            ctx.strokeRect(x0, y0, plateW, plateH);
+
+            // Tensile Arrows
+            ctx.fillStyle = '#f59e0b';
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+
+            for (let i = 0; i <= 4; i++) {
+                const ax = x0 + (plateW / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(ax, y0 - 3);
+                ctx.lineTo(ax, y0 - 16);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(ax, y0 + plateH + 3);
+                ctx.lineTo(ax, y0 + plateH + 16);
+                ctx.stroke();
+            }
+
+            // Draw Crack Geometry
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            const crackPx = Math.min((a0 / W) * plateW, plateW * 0.45);
+
+            if (geomType === 'center') {
+                document.getElementById('canvas-geom-tag').innerText = 'CCT Specimen';
+                const cx = x0 + plateW / 2;
+                const cy = y0 + plateH / 2;
+                ctx.beginPath();
+                ctx.moveTo(cx - crackPx, cy);
+                ctx.lineTo(cx + crackPx, cy);
+                ctx.stroke();
+
+                // Plastic Zone Circles
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+                ctx.beginPath();
+                ctx.arc(cx - crackPx, cy, 5, 0, 2 * Math.PI);
+                ctx.arc(cx + crackPx, cy, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            } else if (geomType === 'single_edge') {
+                document.getElementById('canvas-geom-tag').innerText = 'SENT Specimen';
+                const cy = y0 + plateH / 2;
+                ctx.beginPath();
+                ctx.moveTo(x0, cy);
+                ctx.lineTo(x0 + crackPx * 1.8, cy);
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+                ctx.beginPath();
+                ctx.arc(x0 + crackPx * 1.8, cy, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            } else if (geomType === 'double_edge') {
+                document.getElementById('canvas-geom-tag').innerText = 'DENT Specimen';
+                const cy = y0 + plateH / 2;
+                ctx.beginPath();
+                ctx.moveTo(x0, cy);
+                ctx.lineTo(x0 + crackPx, cy);
+                ctx.moveTo(x0 + plateW, cy);
+                ctx.lineTo(x0 + plateW - crackPx, cy);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px Inter';
+            ctx.fillText(`Width W = ${W} mm`, x0 + plateW / 2 - 28, y0 + plateH + 24);
+        }
+
+        // CHART.JS INITIALIZATION
+        function initCharts() {
+            // Chart 1: a vs N
+            const ctx1 = document.getElementById('chart-a-vs-n').getContext('2d');
+            chartAvsN = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Crack Length a (mm)',
+                        data: [],
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                        fill: true,
+                        tension: 0.2,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Cycles (N)', font: { size: 10 } },
+                            ticks: { font: { size: 9 } }
+                        },
+                        y: {
+                            title: { display: true, text: 'Crack Length a (mm)', font: { size: 10 } },
+                            ticks: { font: { size: 9 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Chart 2: Log-Log da/dN vs dK
+            const ctx2 = document.getElementById('chart-dadn-vs-dk').getContext('2d');
+            chartDadnVsDk = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Paris Growth Rate',
+                        data: [],
+                        borderColor: '#0d9488',
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'logarithmic',
+                            title: { display: true, text: 'Stress Intensity Range ΔK (MPa√m)', font: { size: 10 } },
+                            ticks: { font: { size: 9 } }
+                        },
+                        y: {
+                            type: 'logarithmic',
+                            title: { display: true, text: 'Growth Rate da/dN (m/cycle)', font: { size: 10 } },
+                            ticks: { font: { size: 9 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function updateCharts(a_hist, n_hist, dk_hist, dadn_hist, ac_mm) {
+            // Update a vs N
+            const dataAN = n_hist.map((n, idx) => ({ x: n, y: a_hist[idx] }));
+            chartAvsN.data.datasets[0].data = dataAN;
+            chartAvsN.update();
+
+            // Update da/dN vs dK
+            const dataDadn = dk_hist.map((dk, idx) => ({ x: dk, y: dadn_hist[idx] }));
+            chartDadnVsDk.data.datasets[0].data = dataDadn;
+            chartDadnVsDk.update();
+        }
+    </script>
+</body>
+</html>
